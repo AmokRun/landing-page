@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina Hub - Vos favoris repensés</title>
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Configuration Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        lumina: {
+                            bg: '#050505',
+                            card: 'rgba(25, 25, 25, 0.4)',
+                            border: 'rgba(255, 255, 255, 0.04)',
+                            hover: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Styles personnalisés et Animations -->
+    <style>
+        body {
+            background-color: #050505;
+            color: #e5e5e5;
+            overflow-x: hidden;
+        }
+        
+        /* Cacher la scrollbar mais garder le scroll */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Effets Glassmorphism */
+        .glass-panel {
+            background: var(--tw-colors-lumina-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--tw-colors-lumina-border);
+        }
+
+        /* Animations des cartes */
+        .card-transition {
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-6px);
+            border-color: var(--tw-colors-lumina-hover);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.7);
+            background: rgba(35, 35, 35, 0.5);
+        }
+
+        /* Entrée échelonnée */
+        .stagger-enter {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+        }
+
+        @keyframes fadeUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Modal animations */
+        .modal-overlay {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; }
+        
+        .modal-content {
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .modal-overlay.active .modal-content {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        /* Drag & Drop visuel */
+        .dragging {
+            opacity: 0.4;
+            transform: scale(0.95);
+        }
+        .drag-over {
+            border-color: #3b82f6 !important;
+            background: rgba(59, 130, 246, 0.1) !important;
+        }
+        
+        /* Clamp text */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="selection:bg-blue-500/30 selection:text-blue-200">
+
+    <!-- Fond décoratif (Premium Glow) -->
+    <div class="fixed inset-0 z-0 pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/10 blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/10 blur-[120px]"></div>
+    </div>
+
+    <main class="relative z-10 max-w-7xl mx-auto px-6 py-8 md:py-12 min-h-screen flex flex-col">
+        
+        <!-- HEADER -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-16 stagger-enter" style="animation-delay: 0.1s">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center shadow-lg shadow-black/50 backdrop-blur-md">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-blue-400"></i>
+                </div>
+                <h1 class="text-xl font-semibold tracking-tight text-white">Lumina Hub</h1>
+            </div>
+
+            <div class="flex items-center gap-4 w-full md:w-auto">
+                <!-- Barre de recherche -->
+                <div class="relative group w-full md:w-72">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i data-lucide="search" class="h-4 w-4 text-neutral-500 group-focus-within:text-blue-400 transition-colors"></i>
+                    </div>
+                    <input
+                        type="text"
+                        id="search-input"
+                        placeholder="Rechercher un site..."
+                        class="w-full bg-neutral-900/50 border border-neutral-800 focus:border-blue-500/50 rounded-2xl py-2.5 pl-10 pr-10 text-sm text-neutral-200 placeholder-neutral-500 outline-none transition-all focus:bg-neutral-900/80 focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] backdrop-blur-sm"
+                    />
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <i data-lucide="command" class="h-3 w-3 text-neutral-600"></i>
+                    </div>
+                </div>
+
+                <!-- Bouton Ajouter -->
+                <button
+                    onclick="openModal()"
+                    class="shrink-0 bg-white hover:bg-neutral-200 text-black px-4 py-2.5 rounded-2xl text-sm font-medium transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                >
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Ajouter</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- HERO SECTION -->
+        <section class="mb-16 stagger-enter" style="animation-delay: 0.2s">
+            <h2 class="text-4xl md:text-6xl font-bold tracking-tighter text-white mb-4">
+                Votre espace.<br />
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">
+                    Repensé.
+                </span>
+            </h2>
+            <p class="text-neutral-400 text-lg md:text-xl max-w-2xl font-light">
+                Centralisez vos outils de travail, sites favoris et ressources essentielles dans une interface ultra-rapide et épurée.
+            </p>
+        </section>
+
+        <!-- DASHBOARD (Compteur et Grille) -->
+        <div class="mb-6 flex items-center justify-between text-neutral-400 stagger-enter" style="animation-delay: 0.3s">
+            <div class="flex items-center gap-2">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                <span class="text-sm font-medium" id="bookmarks-count">Favoris (0)</span>
+            </div>
+        </div>
+
+        <!-- Conteneur de la grille -->
+        <div id="bookmarks-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 flex-1">
+            <!-- Les cartes seront injectées ici par JS -->
+        </div>
+
+        <!-- État vide (caché par défaut) -->
+        <div id="empty-state" class="hidden py-20 text-center border border-dashed border-neutral-800 rounded-3xl bg-neutral-900/20 backdrop-blur-sm mt-8">
+            <i data-lucide="globe" class="w-12 h-12 text-neutral-700 mx-auto mb-4"></i>
+            <h3 class="text-neutral-300 font-medium mb-2">Aucun site trouvé</h3>
+            <p class="text-neutral-500 text-sm mb-6">Ajoutez votre premier favori ou modifiez votre recherche.</p>
+            <button onclick="openModal()" class="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
+                + Ajouter un site
+            </button>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="mt-auto pt-20 pb-8 border-t border-neutral-900/50">
+            <div class="flex items-center justify-between text-neutral-500 text-xs font-medium">
+                <p>© 2026 Lumina Hub. Local storage only.</p>
+                <div class="flex gap-4">
+                    <span class="hover:text-neutral-300 cursor-pointer transition-colors">Confidentialité</span>
+                    <span class="hover:text-neutral-300 cursor-pointer transition-colors">Termes</span>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- MODAL (Cachée par défaut) -->
+    <div id="modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none modal-overlay">
+        <!-- Overlay sombre -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-xl" onclick="closeModal()"></div>
+        
+        <!-- Contenu de la modale -->
+        <div class="modal-content relative w-full max-w-lg bg-[#0F0F0F] border border-neutral-800 rounded-[2.5rem] p-8 shadow-2xl shadow-black pointer-events-auto">
+            
+            <button onclick="closeModal()" class="absolute top-6 right-6 p-2 text-neutral-400 hover:text-white hover:bg-white/5 rounded-full transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <h2 id="modal-title" class="text-2xl font-bold text-white mb-6">Nouveau favori</h2>
+
+            <form id="bookmark-form" onsubmit="handleFormSubmit(event)" class="space-y-5">
+                <input type="hidden" id="bookmark-id">
+                
+                <div>
+                    <label class="block text-sm font-medium text-neutral-400 mb-1.5 ml-1">Nom du site</label>
+                    <input required type="text" id="bookmark-name" placeholder="Ex: Notion" class="w-full bg-neutral-900 border border-neutral-800 focus:border-blue-500/50 rounded-2xl px-4 py-3 text-neutral-100 placeholder-neutral-600 outline-none transition-all focus:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-neutral-400 mb-1.5 ml-1">URL</label>
+                    <input required type="text" id="bookmark-url" placeholder="Ex: notion.so" class="w-full bg-neutral-900 border border-neutral-800 focus:border-blue-500/50 rounded-2xl px-4 py-3 text-neutral-100 placeholder-neutral-600 outline-none transition-all focus:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-neutral-400 mb-1.5 ml-1">Description courte</label>
+                    <textarea id="bookmark-desc" maxlength="100" placeholder="Espace de travail collaboratif..." class="w-full bg-neutral-900 border border-neutral-800 focus:border-blue-500/50 rounded-2xl px-4 py-3 text-neutral-100 placeholder-neutral-600 outline-none transition-all focus:bg-neutral-800 resize-none h-24 focus:ring-2 focus:ring-blue-500/20"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-400 mb-1.5 ml-1">Catégorie (Optionnel)</label>
+                        <input type="text" id="bookmark-tag" placeholder="Ex: Design" class="w-full bg-neutral-900 border border-neutral-800 focus:border-blue-500/50 rounded-2xl px-4 py-3 text-neutral-100 placeholder-neutral-600 outline-none transition-all focus:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-400 mb-1.5 ml-1">Accent visuel</label>
+                        <div id="color-picker" class="flex items-center gap-2 h-[46px] px-2 bg-neutral-900 border border-neutral-800 rounded-2xl overflow-x-auto no-scrollbar">
+                            <!-- Couleurs injectées par JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 mt-6 border-t border-neutral-800/50 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 rounded-2xl text-sm font-medium text-neutral-400 hover:text-white hover:bg-white/5 transition-colors">
+                        Annuler
+                    </button>
+                    <button type="submit" id="submit-btn" class="bg-white hover:bg-neutral-200 text-black px-6 py-2.5 rounded-2xl text-sm font-medium transition-all transform hover:scale-[1.02] active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                        Ajouter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        // --- DONNÉES PAR DÉFAUT ---
+        const DEFAULT_BOOKMARKS = [
+            { id: '1', name: 'Linear', url: 'https://linear.app', description: 'Outil de gestion de projet conçu pour les créateurs de logiciels.', tag: 'Productivité', color: 'from-[#5E6AD2] to-[#929BEE]' },
+            { id: '2', name: 'Vercel', url: 'https://vercel.com', description: 'Plateforme frontend pour développer, prévisualiser et déployer.', tag: 'Développement', color: 'from-neutral-700 to-neutral-900' },
+            { id: '3', name: 'Figma', url: 'https://figma.com', description: 'L\'outil de conception collaboratif pour les équipes.', tag: 'Design', color: 'from-[#F24E1E] to-[#FF7262]' },
+            { id: '4', name: 'Notion', url: 'https://notion.so', description: 'L\'espace de travail tout-en-un pour vos notes et projets.', tag: 'Organisation', color: 'from-neutral-600 to-neutral-800' },
+            { id: '5', name: 'GitHub', url: 'https://github.com', description: 'La plateforme de développement pour héberger et revoir du code.', tag: 'Développement', color: 'from-[#2b3137] to-[#24292e]' }
+        ];
+
+        const GRADIENT_COLORS = [
+            'from-blue-500 to-cyan-500',
+            'from-purple-500 to-pink-500',
+            'from-orange-500 to-red-500',
+            'from-emerald-400 to-cyan-400',
+            'from-neutral-600 to-neutral-800',
+            'from-[#5E6AD2] to-[#929BEE]'
+        ];
+
+        // --- ÉTATS GLOBAUX ---
+        let bookmarks = [];
+        let selectedColor = GRADIENT_COLORS[0];
+        let draggedItemIndex = null;
+
+        // --- INITIALISATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialisation de Lucide Icons
+            lucide.createIcons();
+
+            // Chargement depuis le LocalStorage
+            const saved = localStorage.getItem('lumina_bookmarks');
+            if (saved) {
+                bookmarks = JSON.parse(saved);
+            } else {
+                bookmarks = [...DEFAULT_BOOKMARKS];
+                saveBookmarks();
+            }
+
+            // Génération du picker de couleur
+            renderColorPicker();
+
+            // Rendu de la grille
+            renderGrid();
+
+            // Écouteur de recherche
+            document.getElementById('search-input').addEventListener('input', renderGrid);
+        });
+
+        // --- SAUVEGARDE ---
+        function saveBookmarks() {
+            localStorage.setItem('lumina_bookmarks', JSON.stringify(bookmarks));
+        }
+
+        // --- RENDU DE LA GRILLE ---
+        function renderGrid() {
+            const grid = document.getElementById('bookmarks-grid');
+            const emptyState = document.getElementById('empty-state');
+            const countLabel = document.getElementById('bookmarks-count');
+            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            
+            grid.innerHTML = '';
+
+            // Filtrage
+            const filtered = bookmarks.filter(b => 
+                b.name.toLowerCase().includes(searchQuery) || 
+                (b.description && b.description.toLowerCase().includes(searchQuery)) ||
+                (b.tag && b.tag.toLowerCase().includes(searchQuery))
+            );
+
+            countLabel.textContent = `Favoris (${filtered.length})`;
+
+            if (filtered.length === 0) {
+                grid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            } else {
+                grid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+
+                filtered.forEach((bookmark, index) => {
+                    // Trouver l'index réel dans le tableau global pour le drag&drop et la suppression
+                    const realIndex = bookmarks.findIndex(b => b.id === bookmark.id);
+                    
+                    const domain = extractDomain(bookmark.url);
+                    const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                    const initial = bookmark.name.charAt(0).toUpperCase();
+
+                    const card = document.createElement('a');
+                    card.href = formatUrl(bookmark.url);
+                    card.target = '_blank';
+                    card.rel = 'noopener noreferrer';
+                    card.className = `group relative flex flex-col p-6 rounded-[2rem] glass-panel card-hover card-transition stagger-enter cursor-pointer overflow-hidden`;
+                    card.style.animationDelay = `${index * 0.05 + 0.3}s`; // Animation fluide échelonnée
+                    
+                    // Attributs pour Drag & Drop
+                    card.draggable = true;
+                    card.dataset.index = realIndex;
+                    
+                    // Événements Drag & Drop
+                    card.addEventListener('dragstart', handleDragStart);
+                    card.addEventListener('dragover', handleDragOver);
+                    card.addEventListener('dragleave', handleDragLeave);
+                    card.addEventListener('drop', handleDrop);
+                    card.addEventListener('dragend', handleDragEnd);
+
+                    card.innerHTML = `
+                        <!-- Lueur de fond -->
+                        <div class="absolute inset-0 opacity-0 group-hover:opacity-10 bg-gradient-to-br ${bookmark.color} transition-opacity duration-500 rounded-[2rem] pointer-events-none z-0"></div>
+                        
+                        <!-- En-tête de la carte -->
+                        <div class="flex items-start justify-between mb-5 relative z-10">
+                            <div class="w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br ${bookmark.color} p-[1px] shadow-lg shadow-black/40">
+                                <div class="w-full h-full bg-[#111] rounded-2xl flex items-center justify-center overflow-hidden">
+                                    <img src="${faviconUrl}" alt="Logo" class="w-7 h-7 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                    <span class="text-lg font-bold text-white hidden">${initial}</span>
+                                </div>
+                            </div>
+
+                            <!-- Actions contextuelles (stopPropagation pour ne pas ouvrir le lien) -->
+                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button onclick="handleEdit(event, '${bookmark.id}')" class="p-2 text-neutral-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors" title="Modifier">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="handleDelete(event, '${bookmark.id}')" class="p-2 text-neutral-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-colors" title="Supprimer">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                                <div class="p-2 text-neutral-500 cursor-grab hover:text-white" title="Déplacer" onclick="event.preventDefault(); event.stopPropagation();">
+                                    <i data-lucide="grip-horizontal" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contenu -->
+                        <div class="relative z-10 flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <h3 class="text-xl font-semibold text-neutral-100 tracking-tight">${escapeHTML(bookmark.name)}</h3>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5 text-neutral-600 group-hover:text-neutral-400 transition-colors"></i>
+                            </div>
+                            <p class="text-sm text-neutral-400 line-clamp-2 leading-relaxed">
+                                ${escapeHTML(bookmark.description || 'Aucune description.')}
+                            </p>
+                        </div>
+
+                        <!-- Footer de carte -->
+                        <div class="mt-6 flex items-center relative z-10">
+                            ${bookmark.tag ? `<span class="text-xs font-medium px-3 py-1 rounded-full bg-white/5 text-neutral-300 border border-white/5">${escapeHTML(bookmark.tag)}</span>` : ''}
+                            <span class="ml-auto text-xs text-neutral-600 truncate max-w-[120px]">${domain}</span>
+                        </div>
+                    `;
+
+                    grid.appendChild(card);
+                });
+            }
+
+            // Ré-initialiser les icônes sur les nouveaux éléments
+            lucide.createIcons();
+        }
+
+        // --- GESTION DE LA MODALE ---
+        function openModal(bookmarkId = null) {
+            const modal = document.getElementById('modal');
+            const form = document.getElementById('bookmark-form');
+            const title = document.getElementById('modal-title');
+            const submitBtn = document.getElementById('submit-btn');
+
+            modal.classList.add('active');
+            modal.style.pointerEvents = 'auto'; // Réactiver les clics
+            form.reset();
+
+            if (bookmarkId) {
+                const b = bookmarks.find(x => x.id === bookmarkId);
+                if (b) {
+                    title.textContent = 'Modifier le site';
+                    submitBtn.textContent = 'Sauvegarder';
+                    document.getElementById('bookmark-id').value = b.id;
+                    document.getElementById('bookmark-name').value = b.name;
+                    document.getElementById('bookmark-url').value = b.url;
+                    document.getElementById('bookmark-desc').value = b.description;
+                    document.getElementById('bookmark-tag').value = b.tag || '';
+                    selectColor(b.color);
+                }
+            } else {
+                title.textContent = 'Nouveau favori';
+                submitBtn.textContent = 'Ajouter';
+                document.getElementById('bookmark-id').value = '';
+                selectColor(GRADIENT_COLORS[Math.floor(Math.random() * GRADIENT_COLORS.length)]);
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('active');
+            // Retarder la désactivation des clics pour l'animation
+            setTimeout(() => {
+                modal.style.pointerEvents = 'none';
+            }, 300);
+        }
+
+        // --- GESTION DU FORMULAIRE ---
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('bookmark-id').value;
+            const name = document.getElementById('bookmark-name').value.trim();
+            const url = document.getElementById('bookmark-url').value.trim();
+            const description = document.getElementById('bookmark-desc').value.trim();
+            const tag = document.getElementById('bookmark-tag').value.trim();
+
+            const newBookmark = {
+                id: id || Date.now().toString(),
+                name,
+                url: formatUrl(url),
+                description,
+                tag,
+                color: selectedColor
+            };
+
+            if (id) {
+                const idx = bookmarks.findIndex(b => b.id === id);
+                if (idx !== -1) bookmarks[idx] = newBookmark;
+            } else {
+                bookmarks.unshift(newBookmark);
+            }
+
+            saveBookmarks();
+            renderGrid();
+            closeModal();
+        }
+
+        function handleEdit(e, id) {
+            e.preventDefault();
+            e.stopPropagation();
+            openModal(id);
+        }
+
+        function handleDelete(e, id) {
+            e.preventDefault();
+            e.stopPropagation();
+            if(confirm('Êtes-vous sûr de vouloir supprimer ce favori ?')) {
+                bookmarks = bookmarks.filter(b => b.id !== id);
+                saveBookmarks();
+                renderGrid();
+            }
+        }
+
+        // --- GESTION DES COULEURS ---
+        function renderColorPicker() {
+            const picker = document.getElementById('color-picker');
+            picker.innerHTML = '';
+            
+            GRADIENT_COLORS.forEach(color => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `shrink-0 w-8 h-8 rounded-full bg-gradient-to-br ${color} transition-transform focus:outline-none`;
+                
+                if (color === selectedColor) {
+                    btn.classList.add('scale-110', 'ring-2', 'ring-white', 'ring-offset-2', 'ring-offset-[#0F0F0F]');
+                } else {
+                    btn.classList.add('hover:scale-110', 'opacity-60', 'hover:opacity-100');
+                }
+
+                btn.onclick = () => selectColor(color);
+                picker.appendChild(btn);
+            });
+        }
+
+        function selectColor(color) {
+            selectedColor = color;
+            renderColorPicker(); // Rafraichir l'UI
+        }
+
+        // --- DRAG AND DROP ---
+        function handleDragStart(e) {
+            draggedItemIndex = parseInt(this.dataset.index);
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            // Permet de passer des données (requis pour Firefox)
+            e.dataTransfer.setData('text/plain', draggedItemIndex);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            // Ajouter un feedback visuel seulement si ce n'est pas l'élément qu'on traîne
+            if (parseInt(this.dataset.index) !== draggedItemIndex) {
+                this.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('drag-over');
+            
+            const dropIndex = parseInt(this.dataset.index);
+            
+            if (draggedItemIndex !== null && draggedItemIndex !== dropIndex) {
+                // Réorganiser le tableau
+                const item = bookmarks.splice(draggedItemIndex, 1)[0];
+                bookmarks.splice(dropIndex, 0, item);
+                
+                saveBookmarks();
+                renderGrid();
+            }
+            draggedItemIndex = null;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            draggedItemIndex = null;
+        }
+
+        // --- UTILITAIRES ---
+        function formatUrl(url) {
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                return 'https://' + url;
+            }
+            return url;
+        }
+
+        function extractDomain(url) {
+            try {
+                let domain = new URL(formatUrl(url)).hostname;
+                return domain.replace('www.', '');
+            } catch {
+                return url;
+            }
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&',
+                    '<': '<',
+                    '>': '>',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag])
+            );
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexmark — Vos favoris réinventés</title>
+  <meta name="description" content="La plateforme de gestion de favoris ultra-premium. Organisez, trouvez et accédez à vos sites en un clic." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+    body {
+      background-color: #07070a;
+      color: #f1f1f3;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Glassmorphism ── */
+    .glass {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+
+    .glass-hover:hover {
+      background: rgba(255,255,255,0.055);
+      border-color: rgba(255,255,255,0.13);
+    }
+
+    .glass-modal {
+      background: rgba(10,10,14,0.94);
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(48px);
+      -webkit-backdrop-filter: blur(48px);
+    }
+
+    /* ── Gradient text ── */
+    .gradient-text {
+      background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 40%, #818cf8 80%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .gradient-text-white {
+      background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+      transition: all 0.2s ease;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4f46e5 0%, #6d28d9 100%);
+      box-shadow: 0 8px 32px rgba(99,102,241,0.35);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* ── Input ── */
+    .premium-input {
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(255,255,255,0.09);
+      color: #f1f1f3;
+      transition: all 0.2s ease;
+    }
+    .premium-input:focus {
+      outline: none;
+      background: rgba(255,255,255,0.055);
+      border-color: rgba(99,102,241,0.55);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+    .premium-input::placeholder { color: rgba(255,255,255,0.22); }
+
+    /* ── Glow orbs ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+      will-change: transform;
+    }
+
+    /* ── Bookmark card ── */
+    .bookmark-card {
+      transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
+                  box-shadow 0.22s ease,
+                  border-color 0.22s ease,
+                  background 0.22s ease;
+    }
+    .bookmark-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 24px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.25);
+      border-color: rgba(99,102,241,0.25) !important;
+    }
+    .bookmark-card .card-actions { opacity: 0; transition: opacity 0.18s ease; }
+    .bookmark-card:hover .card-actions { opacity: 1; }
+    .bookmark-card .drag-handle { opacity: 0; transition: opacity 0.18s ease; }
+    .bookmark-card:hover .drag-handle { opacity: 1; }
+    .bookmark-card .card-link-icon { color: rgba(255,255,255,0.25); transition: color 0.2s ease; }
+    .bookmark-card:hover .card-link-icon { color: #818cf8; }
+
+    /* ── Bookmark grid ── */
+    #bookmarksGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
+      gap: 14px;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.88); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes fadeOutScale {
+      from { opacity: 1; transform: scale(1); }
+      to   { opacity: 0; transform: scale(0.9); }
+    }
+    @keyframes slideInModal {
+      from { opacity: 0; transform: scale(0.93) translateY(24px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0) rotate(0deg); }
+      33%      { transform: translateY(-14px) rotate(0.8deg); }
+      66%      { transform: translateY(-7px) rotate(-0.8deg); }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+    @keyframes gradient-shift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .card-enter {
+      animation: scaleIn 0.38s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    .card-stagger {
+      opacity: 0;
+      animation: fadeInUp 0.4s ease-out forwards;
+    }
+    .card-exit {
+      animation: fadeOutScale 0.28s ease-in forwards;
+      pointer-events: none;
+    }
+
+    .modal-enter { animation: slideInModal 0.32s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+    .float-1 { animation: float 6.2s ease-in-out infinite; }
+    .float-2 { animation: float 7.8s ease-in-out infinite 1.2s; }
+    .float-3 { animation: float 5.9s ease-in-out infinite 2.4s; }
+
+    .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+    .animated-gradient {
+      background: linear-gradient(270deg, #6366f1, #8b5cf6, #ec4899, #6366f1);
+      background-size: 400% 400%;
+      animation: gradient-shift 8s ease infinite;
+    }
+
+    /* ── Category pills ── */
+    .cat-pill {
+      transition: all 0.18s ease;
+      border: 1px solid rgba(255,255,255,0.07);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .cat-pill:hover { border-color: rgba(255,255,255,0.14); color: #f1f1f3; }
+    .cat-pill.active {
+      background: rgba(99,102,241,0.18) !important;
+      border-color: rgba(99,102,241,0.45) !important;
+      color: #a5b4fc !important;
+    }
+
+    /* ── Drag & Drop ── */
+    .bookmark-card.is-dragging {
+      opacity: 0.35;
+      transform: scale(0.97);
+      cursor: grabbing;
+    }
+    .bookmark-card.drag-target {
+      border-color: rgba(99,102,241,0.55) !important;
+      background: rgba(99,102,241,0.07) !important;
+    }
+
+    /* ── Modal overlay ── */
+    #modalOverlay {
+      opacity: 0;
+      transition: opacity 0.28s ease;
+    }
+    #modalOverlay.show { opacity: 1; }
+
+    #deleteModal {
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+    #deleteModal.show { opacity: 1; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.09); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
+    /* ── Hero badge shimmer ── */
+    .hero-badge {
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 3s infinite;
+    }
+
+    /* ── Line clamp ── */
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ── Feature card ── */
+    .feature-card {
+      transition: transform 0.22s ease, border-color 0.22s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(99,102,241,0.2) !important;
+    }
+
+    /* ── Accent bottom bar on card ── */
+    .card-accent-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      border-radius: 0 0 16px 16px;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+    .bookmark-card:hover .card-accent-bar { opacity: 1; }
+
+    /* ── Nav glassmorphism ── */
+    .nav-glass {
+      background: rgba(7,7,10,0.8);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+    }
+
+    /* ── Sticky app header ── */
+    .app-header-glass {
+      background: rgba(7,7,10,0.88);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+
+    /* ── Focus ring ── */
+    button:focus-visible, a:focus-visible {
+      outline: 2px solid rgba(99,102,241,0.7);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ════════════════════════════════════════════════════
+       BACKGROUND ORBS
+  ════════════════════════════════════════════════════ -->
+  <div aria-hidden="true">
+    <div class="orb w-[700px] h-[700px] bg-indigo-900/[0.18] top-[-200px] right-[-180px] z-0"></div>
+    <div class="orb w-[500px] h-[500px] bg-violet-900/[0.13] top-[60%] left-[-150px] z-0"></div>
+    <div class="orb w-[350px] h-[350px] bg-blue-900/[0.1] top-[35%] left-[45%] z-0"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       NAVIGATION
+  ════════════════════════════════════════════════════ -->
+  <nav id="mainNav" class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 sm:px-8 py-3.5 nav-glass">
+    <!-- Logo -->
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 btn-primary rounded-[10px] flex items-center justify-center flex-shrink-0">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <span class="font-bold text-[15px] tracking-tight text-white">Nexmark</span>
+    </div>
+
+    <!-- Nav links -->
+    <div class="hidden md:flex items-center gap-1">
+      <a onclick="scrollToSection('features')" href="#" class="px-3.5 py-1.5 text-sm text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-white/5">Fonctionnalités</a>
+      <a onclick="scrollToSection('app')" href="#" class="px-3.5 py-1.5 text-sm text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-white/5">Application</a>
+    </div>
+
+    <!-- CTA -->
+    <div class="flex items-center gap-2.5">
+      <button onclick="scrollToSection('app')" class="hidden sm:block px-3.5 py-1.5 text-sm text-zinc-400 hover:text-white transition-colors rounded-xl glass glass-hover">
+        Explorer
+      </button>
+      <button onclick="scrollToSection('app'); setTimeout(openAddModal, 600)" class="btn-primary rounded-xl px-4 py-1.5 text-sm font-semibold text-white">
+        Commencer
+      </button>
+    </div>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════
+       HERO SECTION
+  ════════════════════════════════════════════════════ -->
+  <section id="hero" class="relative min-h-screen flex flex-col items-center justify-center px-5 z-10 pt-20">
+
+    <!-- Hero content -->
+    <div class="text-center max-w-4xl mx-auto w-full">
+
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2.5 hero-badge glass rounded-full px-4 py-1.5 mb-8">
+        <span class="pulse-dot w-1.5 h-1.5 bg-indigo-400 rounded-full flex-shrink-0"></span>
+        <span class="text-xs font-medium text-zinc-400">La gestion de favoris réinventée · 2026</span>
+      </div>
+
+      <!-- Title -->
+      <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[1.04] tracking-[-0.04em] mb-6">
+        <span class="gradient-text">Vos favoris.</span><br/>
+        <span class="gradient-text-white">Réinventés.</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="text-base sm:text-lg md:text-xl text-zinc-500 max-w-2xl mx-auto mb-10 leading-relaxed font-[380]">
+        Une expérience ultra-raffinée pour organiser, trouver et accéder à vos sites préférés.
+        <span class="text-zinc-400">Élégant, rapide, minimaliste.</span>
+      </p>
+
+      <!-- CTAs -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
+        <button onclick="scrollToSection('app')" class="btn-primary rounded-2xl px-8 py-3.5 text-[15px] font-semibold text-white w-full sm:w-auto">
+          Accéder à l'application →
+        </button>
+        <button onclick="scrollToSection('features')" class="glass glass-hover rounded-2xl px-8 py-3.5 text-[15px] font-medium text-zinc-400 hover:text-white transition-colors w-full sm:w-auto">
+          Découvrir les fonctionnalités
+        </button>
+      </div>
+
+      <!-- Stats row -->
+      <div class="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-white">∞</div>
+          <div class="text-xs text-zinc-600 mt-0.5">Favoris</div>
+        </div>
+        <div class="w-px h-8 bg-white/7 hidden sm:block"></div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-white">0ms</div>
+          <div class="text-xs text-zinc-600 mt-0.5">Latence</div>
+        </div>
+        <div class="w-px h-8 bg-white/7 hidden sm:block"></div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-white">100%</div>
+          <div class="text-xs text-zinc-600 mt-0.5">Local · Privé</div>
+        </div>
+        <div class="w-px h-8 bg-white/7 hidden sm:block"></div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-white">Dark</div>
+          <div class="text-xs text-zinc-600 mt-0.5">Mode par défaut</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating decorative cards -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+      <!-- Left card -->
+      <div class="float-1 absolute left-[3%] top-[28%] hidden xl:block">
+        <div class="glass rounded-2xl p-4 w-56 shadow-2xl">
+          <div class="flex items-start gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center flex-shrink-0 text-white text-lg font-bold">L</div>
+            <div>
+              <p class="text-sm font-semibold text-white">Linear</p>
+              <p class="text-xs text-zinc-500 mt-0.5">linear.app</p>
+            </div>
+          </div>
+          <p class="text-xs text-zinc-600 mb-3">Issue tracker for modern teams</p>
+          <span class="text-xs px-2 py-0.5 rounded-lg bg-indigo-500/15 text-indigo-400 font-medium">Productivité</span>
+        </div>
+      </div>
+
+      <!-- Right top card -->
+      <div class="float-2 absolute right-[3%] top-[20%] hidden xl:block">
+        <div class="glass rounded-2xl p-4 w-56 shadow-2xl">
+          <div class="flex items-start gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 text-white text-lg font-bold">V</div>
+            <div>
+              <p class="text-sm font-semibold text-white">Vercel</p>
+              <p class="text-xs text-zinc-500 mt-0.5">vercel.com</p>
+            </div>
+          </div>
+          <p class="text-xs text-zinc-600 mb-3">Deploy web projects with ease</p>
+          <span class="text-xs px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-400 font-medium">Dev</span>
+        </div>
+      </div>
+
+      <!-- Right bottom card -->
+      <div class="float-3 absolute right-[5%] top-[58%] hidden xl:block">
+        <div class="glass rounded-2xl p-4 w-56 shadow-2xl">
+          <div class="flex items-start gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center flex-shrink-0 text-white text-lg font-bold">F</div>
+            <div>
+              <p class="text-sm font-semibold text-white">Figma</p>
+              <p class="text-xs text-zinc-500 mt-0.5">figma.com</p>
+            </div>
+          </div>
+          <p class="text-xs text-zinc-600 mb-3">Collaborative design platform</p>
+          <span class="text-xs px-2 py-0.5 rounded-lg bg-pink-500/15 text-pink-400 font-medium">Design</span>
+        </div>
+      </div>
+
+      <!-- Left bottom card -->
+      <div class="float-1 absolute left-[4%] top-[65%] hidden xl:block" style="animation-delay: 3s;">
+        <div class="glass rounded-2xl p-4 w-52 shadow-2xl">
+          <div class="flex items-start gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 text-white text-lg font-bold">N</div>
+            <div>
+              <p class="text-sm font-semibold text-white">Notion</p>
+              <p class="text-xs text-zinc-500 mt-0.5">notion.so</p>
+            </div>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-400 font-medium">Productivité</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll indicator -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 opacity-40">
+      <span class="text-xs text-zinc-600 tracking-widest uppercase">Défiler</span>
+      <svg class="animate-bounce" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round">
+        <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       FEATURES SECTION
+  ════════════════════════════════════════════════════ -->
+  <section id="features" class="relative z-10 py-24 px-5">
+    <div class="max-w-6xl mx-auto">
+
+      <!-- Section header -->
+      <div class="text-center mb-16">
+        <p class="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-4">Fonctionnalités</p>
+        <h2 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4">
+          <span class="gradient-text-white">Tout ce dont vous</span><br/>
+          <span class="gradient-text">avez besoin</span>
+        </h2>
+        <p class="text-zinc-500 max-w-xl mx-auto text-base">Conçu pour être rapide, élégant et entièrement local. Aucune donnée ne quitte votre appareil.</p>
+      </div>
+
+      <!-- Feature grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <!-- Feature 1 -->
+        <div class="feature-card glass rounded-2xl p-6 border border-white/7">
+          <div class="w-11 h-11 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center mb-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Grille de tuiles</h3>
+          <p class="text-sm text-zinc-500 leading-relaxed">Vos favoris présentés en grandes cartes visuelles avec logos, noms et descriptions. Accès en un clic.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card glass rounded-2xl p-6 border border-white/7">
+          <div class="w-11 h-11 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center mb-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Recherche instantanée</h3>
+          <p class="text-sm text-zinc-500 leading-relaxed">Filtrez vos favoris en temps réel par nom, URL ou description. Raccourci clavier ⌘K inclus.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card glass rounded-2xl p-6 border border-white/7">
+          <div class="w-11 h-11 rounded-xl bg-pink-500/15 border border-pink-500/25 flex items-center justify-center mb-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2" stroke-linecap="round">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Catégories & tags</h3>
+          <p class="text-sm text-zinc-500 leading-relaxed">Organisez vos sites par catégories personnalisées. Filtrage instantané par onglets.</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card glass rounded-2xl p-6 border border-white/7">
+          <div class="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center mb-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Drag & Drop</h3>
+          <p class="text-sm text-zinc-500 leading-relaxed">Réorganisez vos tuiles par glisser-déposer. L'ordre est sauvegardé automatiquement.</p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card glass rounded-2xl p-6 border border-white/7">
+          <div class="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center mb-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">100% Local</h3>
+          <p class="text-sm text-zinc-500 leading-relaxed">Toutes vos données restent dans votre navigateur via localStorage. Zéro cloud, zéro compte.</p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card glass rounded-2xl p-6 border border-white/7">
+          <div class="w-11 h-11 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center mb-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-white mb-2">Animations fluides</h3>
+          <p class="text-sm text-zinc-500 leading-relaxed">Chaque interaction est animée avec soin. Ajout, suppression, hover — tout est pensé pour le ressenti premium.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       APP SECTION
+  ════════════════════════════════════════════════════ -->
+  <section id="app" class="relative z-10 pb-24">
+
+    <!-- App sticky header -->
+    <div class="sticky top-0 z-40 app-header-glass py-3 px-5 sm:px-8">
+      <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+
+        <!-- Logo -->
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <div class="w-8 h-8 btn-primary rounded-[10px] flex items-center justify-center">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <span class="font-bold text-[15px] tracking-tight hidden sm:block text-white">Mes favoris</span>
+        </div>
+
+        <!-- Search -->
+        <div class="flex-1 max-w-sm relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Rechercher… (⌘K)"
+            class="premium-input w-full rounded-xl pl-8 pr-3 py-2 text-sm"
+          />
+        </div>
+
+        <!-- Add button -->
+        <button
+          onclick="openAddModal()"
+          class="btn-primary rounded-xl px-3.5 py-2 text-sm font-semibold flex items-center gap-1.5 flex-shrink-0"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          <span class="hidden sm:block">Ajouter</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- App body -->
+    <div class="max-w-7xl mx-auto px-5 sm:px-8 pt-8">
+
+      <!-- Category pills -->
+      <div id="categoriesContainer" class="flex items-center gap-2 overflow-x-auto pb-1 mb-7 scrollbar-hide" style="scrollbar-width:none;-ms-overflow-style:none;"></div>
+
+      <!-- Stats bar -->
+      <div class="flex items-center justify-between mb-5">
+        <p id="statsText" class="text-sm text-zinc-600 font-medium"></p>
+        <p class="text-xs text-zinc-700 hidden sm:block">Glissez pour réorganiser · ⌘N pour ajouter</p>
+      </div>
+
+      <!-- Bookmarks grid -->
+      <div id="bookmarksGrid"></div>
+
+      <!-- Empty state -->
+      <div id="emptyState" class="hidden text-center py-28">
+        <div class="w-20 h-20 glass rounded-3xl flex items-center justify-center mx-auto mb-6">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <h3 id="emptyTitle" class="text-xl font-bold text-zinc-300 mb-2">Aucun favori</h3>
+        <p id="emptySubtitle" class="text-zinc-600 mb-6 text-sm">Commencez par ajouter vos sites préférés</p>
+        <button id="emptyBtn" onclick="openAddModal()" class="btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold">
+          Ajouter un site
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       FOOTER
+  ════════════════════════════════════════════════════ -->
+  <footer class="relative z-10 border-t border-white/[0.05] py-8 px-5 sm:px-8">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-700">
+      <div class="flex items-center gap-2">
+        <div class="w-5 h-5 btn-primary rounded-md flex items-center justify-center">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <span class="font-semibold text-zinc-500">Nexmark</span>
+        <span>© 2026</span>
+      </div>
+      <span>Stockage local · Zéro cloud · Zéro compte</span>
+      <div class="flex items-center gap-1">
+        <span class="pulse-dot w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+        <span>Entièrement privé</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ════════════════════════════════════════════════════
+       ADD / EDIT MODAL
+  ════════════════════════════════════════════════════ -->
+  <div
+    id="modalOverlay"
+    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none"
+    role="dialog" aria-modal="true" aria-labelledby="modalTitle"
+  >
+    <!-- Backdrop -->
+    <div id="modalBackdrop" class="absolute inset-0 bg-black/55 backdrop-blur-sm pointer-events-none"></div>
+
+    <!-- Modal box -->
+    <div
+      id="modalBox"
+      class="modal-glass rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md relative z-10 overflow-hidden pointer-events-none"
+    >
+      <!-- Header -->
+      <div class="flex items-start justify-between p-6 pb-4 border-b border-white/[0.06]">
+        <div>
+          <h2 id="modalTitle" class="text-[17px] font-bold text-white">Ajouter un site</h2>
+          <p id="modalSubtitle" class="text-xs text-zinc-500 mt-0.5">Remplissez les informations du site</p>
+        </div>
+        <button onclick="closeModal()" class="w-8 h-8 glass rounded-xl flex items-center justify-center text-zinc-500 hover:text-white transition-colors flex-shrink-0 ml-3">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="bookmarkForm" onsubmit="handleSubmit(event)" class="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
+
+        <!-- Preview bar -->
+        <div class="flex items-center gap-3 p-3.5 glass rounded-2xl">
+          <div id="previewIcon" class="w-11 h-11 rounded-xl bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a14.5 14.5 0 0 0 0 20"/>
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <p id="previewName" class="text-sm font-semibold text-zinc-300 truncate">Aperçu du site</p>
+            <p id="previewDomain" class="text-xs text-zinc-600 mt-0.5 truncate">Entrez une URL ci-dessous</p>
+          </div>
+        </div>
+
+        <!-- Name -->
+        <div>
+          <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Nom du site *</label>
+          <input
+            type="text" id="nameInput"
+            placeholder="ex: Linear, Figma, GitHub…"
+            class="premium-input w-full rounded-xl px-4 py-2.5 text-sm"
+            required
+          />
+        </div>
+
+        <!-- URL -->
+        <div>
+          <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">URL *</label>
+          <input
+            type="text" id="urlInput"
+            placeholder="https://example.com"
+            class="premium-input w-full rounded-xl px-4 py-2.5 text-sm"
+            required
+          />
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Description</label>
+          <textarea
+            id="descInput"
+            placeholder="Une courte description du site…"
+            rows="2"
+            class="premium-input w-full rounded-xl px-4 py-2.5 text-sm resize-none"
+          ></textarea>
+        </div>
+
+        <!-- Category -->
+        <div>
+          <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Catégorie</label>
+          <input
+            type="text" id="categoryInput"
+            placeholder="ex: Design, Dev, Finance…"
+            list="categorySuggestions"
+            class="premium-input w-full rounded-xl px-4 py-2.5 text-sm"
+          />
+          <datalist id="categorySuggestions"></datalist>
+        </div>
+
+        <!-- Custom icon -->
+        <div>
+          <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Icône personnalisée <span class="normal-case text-zinc-700">(optionnel, URL image)</span></label>
+          <input
+            type="text" id="iconInput"
+            placeholder="https://example.com/icon.png"
+            class="premium-input w-full rounded-xl px-4 py-2.5 text-sm"
+          />
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="closeModal()" class="flex-1 glass glass-hover rounded-xl py-3 text-sm font-medium text-zinc-400 hover:text-white transition-colors">
+            Annuler
+          </button>
+          <button type="submit" class="flex-1 btn-primary rounded-xl py-3 text-sm font-semibold text-white">
+            <span id="submitBtnText">Ajouter le site</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       DELETE CONFIRM MODAL
+  ════════════════════════════════════════════════════ -->
+  <div id="deleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+    <div id="deleteBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-none" onclick="closeDeleteModal()"></div>
+    <div id="deleteBox" class="modal-glass rounded-3xl w-full max-w-sm relative z-10 p-7 text-center pointer-events-none">
+      <div class="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-5">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      </div>
+      <h3 class="text-[17px] font-bold text-white mb-1.5">Supprimer ce site ?</h3>
+      <p id="deleteTargetName" class="text-sm text-zinc-500 mb-6">Cette action est irréversible.</p>
+      <div class="flex gap-3">
+        <button onclick="closeDeleteModal()" class="flex-1 glass glass-hover rounded-xl py-3 text-sm font-medium text-zinc-400 hover:text-white transition-colors">
+          Annuler
+        </button>
+        <button id="confirmDeleteBtn" class="flex-1 bg-red-500/80 hover:bg-red-500 rounded-xl py-3 text-sm font-bold text-white transition-colors">
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       JAVASCRIPT
+  ════════════════════════════════════════════════════ -->
+  <script>
+    'use strict';
+
+    // ── DEFAULT BOOKMARKS ────────────────────────────────────
+    const DEFAULT_BOOKMARKS = [
+      { id: 'd1', name: 'Linear', url: 'https://linear.app', description: "L'issue tracker que les développeurs adorent", category: 'Productivité', icon: '', order: 0 },
+      { id: 'd2', name: 'Vercel', url: 'https://vercel.com', description: 'Déployez vos projets web en quelques secondes', category: 'Dev', icon: '', order: 1 },
+      { id: 'd3', name: 'Figma', url: 'https://figma.com', description: 'Design collaboratif en temps réel', category: 'Design', icon: '', order: 2 },
+      { id: 'd4', name: 'GitHub', url: 'https://github.com', description: 'Hébergez et collaborez sur votre code', category: 'Dev', icon: '', order: 3 },
+      { id: 'd5', name: 'Notion', url: 'https://notion.so', description: 'Tout votre travail en un seul endroit', category: 'Productivité', icon: '', order: 4 },
+      { id: 'd6', name: 'Tailwind CSS', url: 'https://tailwindcss.com', description: 'Framework CSS utility-first moderne', category: 'Dev', icon: '', order: 5 },
+      { id: 'd7', name: 'Dribbble', url: 'https://dribbble.com', description: 'Inspiration et portfolio design', category: 'Design', icon: '', order: 6 },
+      { id: 'd8', name: 'Spotify', url: 'https://open.spotify.com', description: 'Musique pour coder', category: 'Médias', icon: '', order: 7 },
+    ];
+
+    // ── STATE ────────────────────────────────────────────────
+    let bookmarks = [];
+    let activeCategory = 'All';
+    let searchQuery = '';
+    let editingId = null;
+    let deleteTargetId = null;
+    let dragSrcId = null;
+    let isModalOpen = false;
+    let isDeleteModalOpen = false;
+
+    // ── INIT ─────────────────────────────────────────────────
+    function init() {
+      try {
+        const saved = localStorage.getItem('nexmark-v2');
+        bookmarks = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_BOOKMARKS));
+      } catch (e) {
+        bookmarks = JSON.parse(JSON.stringify(DEFAULT_BOOKMARKS));
+      }
+      render();
+      setupEventListeners();
+    }
+
+    function save() {
+      try { localStorage.setItem('nexmark-v2', JSON.stringify(bookmarks)); } catch(e) {}
+    }
+
+    // ── UTILS ────────────────────────────────────────────────
+    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const escAttr = s => (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+
+    function uid() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    function scrollToSection(id) {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function getDomain(url) {
+      try { return new URL(url).hostname.replace(/^www\./, ''); }
+      catch { return url; }
+    }
+
+    function ensureUrl(url) {
+      url = url.trim();
+      if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+      return url;
+    }
+
+    function getFaviconUrl(url, customIcon) {
+      if (customIcon && customIcon.trim()) return customIcon.trim();
+      try {
+        const domain = new URL(url).hostname;
+        return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+      } catch { return ''; }
+    }
+
+    const CAT_COLORS = {
+      'Productivité': { bg: 'rgba(99,102,241,0.14)', text: '#a5b4fc' },
+      'Dev':          { bg: 'rgba(52,211,153,0.14)',  text: '#6ee7b7' },
+      'Design':       { bg: 'rgba(251,113,133,0.14)', text: '#fda4af' },
+      'Finance':      { bg: 'rgba(251,191,36,0.14)',  text: '#fcd34d' },
+      'Médias':       { bg: 'rgba(96,165,250,0.14)',  text: '#93c5fd' },
+      'Social':       { bg: 'rgba(167,139,250,0.14)', text: '#c4b5fd' },
+      'News':         { bg: 'rgba(74,222,128,0.14)',  text: '#86efac' },
+    };
+
+    function catColor(cat) {
+      return CAT_COLORS[cat] || { bg: 'rgba(161,161,170,0.12)', text: '#a1a1aa' };
+    }
+
+    // ── FILTER ───────────────────────────────────────────────
+    function getFiltered() {
+      const q = searchQuery.toLowerCase();
+      return bookmarks
+        .filter(b => {
+          const okCat = activeCategory === 'All' || b.category === activeCategory;
+          const okQ = !q ||
+            b.name.toLowerCase().includes(q) ||
+            (b.description || '').toLowerCase().includes(q) ||
+            getDomain(b.url).includes(q) ||
+            (b.category || '').toLowerCase().includes(q);
+          return okCat && okQ;
+        })
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+
+    function getCategories() {
+      return ['Tous', ...[...new Set(bookmarks.map(b => b.category).filter(Boolean))].sort()];
+    }
+
+    // ── RENDER ───────────────────────────────────────────────
+    function render() {
+      renderCategories();
+      renderGrid();
+      updateCatSuggestions();
+    }
+
+    function renderCategories() {
+      const cats = getCategories();
+      document.getElementById('categoriesContainer').innerHTML = cats.map(cat => {
+        const val = cat === 'Tous' ? 'All' : cat;
+        const active = val === activeCategory;
+        return `<button
+          class="cat-pill glass rounded-xl px-4 py-2 text-sm font-medium text-zinc-500 ${active ? 'active' : ''}"
+          onclick="setCategory('${escAttr(val)}')"
+        >${esc(cat)}</button>`;
+      }).join('');
+    }
+
+    function renderGrid() {
+      const filtered = getFiltered();
+      const grid = document.getElementById('bookmarksGrid');
+      const empty = document.getElementById('emptyState');
+      const statsEl = document.getElementById('statsText');
+      const emptyBtn = document.getElementById('emptyBtn');
+
+      const total = bookmarks.length;
+      const showing = filtered.length;
+
+      // Stats text
+      if (searchQuery || activeCategory !== 'All') {
+        statsEl.textContent = `${showing} résultat${showing !== 1 ? 's' : ''} · ${total} favori${total !== 1 ? 's' : ''}`;
+      } else {
+        statsEl.textContent = `${total} favori${total !== 1 ? 's' : ''}`;
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        grid.classList.add('hidden');
+        empty.classList.remove('hidden');
+
+        if (total === 0) {
+          document.getElementById('emptyTitle').textContent = 'Aucun favori';
+          document.getElementById('emptySubtitle').textContent = 'Commencez par ajouter vos sites préférés';
+          emptyBtn.style.display = '';
+        } else {
+          document.getElementById('emptyTitle').textContent = 'Aucun résultat';
+          document.getElementById('emptySubtitle').textContent =
+            searchQuery ? `Aucun site pour « ${searchQuery} »` : 'Aucun site dans cette catégorie';
+          emptyBtn.style.display = 'none';
+        }
+        return;
+      }
+
+      grid.classList.remove('hidden');
+      empty.classList.add('hidden');
+      grid.innerHTML = filtered.map((b, i) => cardHTML(b, i)).join('');
+
+      // Setup drag on freshly rendered cards
+      grid.querySelectorAll('.bookmark-card').forEach(setupCardDrag);
+    }
+
+    function cardHTML(b, index) {
+      const favicon = getFaviconUrl(b.url, b.icon);
+      const domain = getDomain(b.url);
+      const cc = catColor(b.category);
+      const delay = Math.min(index * 40, 280);
+      const iconHtml = favicon
+        ? `<img src="${escAttr(favicon)}" alt="" class="w-full h-full object-contain p-0.5"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+           <span style="display:none" class="w-full h-full flex items-center justify-center text-zinc-600 font-bold text-lg">${esc(b.name.charAt(0).toUpperCase())}</span>`
+        : `<span class="w-full h-full flex items-center justify-center text-zinc-400 font-bold text-lg">${esc(b.name.charAt(0).toUpperCase())}</span>`;
+
+      return `
+        <div
+          class="bookmark-card glass glass-hover rounded-2xl p-5 cursor-pointer relative overflow-hidden card-stagger"
+          style="animation-delay:${delay}ms"
+          data-id="${escAttr(b.id)}"
+          draggable="true"
+          tabindex="0"
+          role="article"
+          aria-label="${escAttr(b.name)}"
+          onclick="openSite(event,'${escAttr(b.url)}')"
+          onkeydown="if(event.key==='Enter'||event.key===' '){openSite(event,'${escAttr(b.url)}')}"
+        >
+          <!-- Actions -->
+          <div class="card-actions absolute top-3 right-3 flex items-center gap-1.5 z-10">
+            <button
+              onclick="event.stopPropagation();openEditModal('${escAttr(b.id)}')"
+              class="w-7 h-7 glass rounded-lg flex items-center justify-center text-zinc-500 hover:text-white transition-colors"
+              title="Modifier" aria-label="Modifier ${escAttr(b.name)}"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+            <button
+              onclick="event.stopPropagation();openDeleteModal('${escAttr(b.id)}')"
+              class="w-7 h-7 glass rounded-lg flex items-center justify-center text-zinc-500 hover:text-red-400 transition-colors"
+              title="Supprimer" aria-label="Supprimer ${escAttr(b.name)}"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Drag handle -->
+          <div class="drag-handle absolute top-3 left-3 cursor-grab active:cursor-grabbing z-10">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,255,255,0.25)" stroke="none">
+              <circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/>
+              <circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
+            </svg>
+          </div>
+
+          <!-- Icon + name -->
+          <div class="flex items-start gap-3.5 mb-3.5">
+            <div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-zinc-800/60 flex items-center justify-center border border-white/5">
+              ${iconHtml}
+            </div>
+            <div class="flex-1 min-w-0 pt-0.5">
+              <h3 class="text-[15px] font-bold text-white truncate leading-tight">${esc(b.name)}</h3>
+              <p class="text-xs text-zinc-600 truncate mt-0.5">${esc(domain)}</p>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <p class="text-sm text-zinc-500 leading-relaxed line-clamp-2 mb-4 min-h-[2.5rem]">
+            ${b.description ? esc(b.description) : ''}
+          </p>
+
+          <!-- Footer -->
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-lg" style="background:${cc.bg};color:${cc.text}">
+              ${b.category ? esc(b.category) : '&nbsp;'}
+            </span>
+            <span class="card-link-icon flex items-center gap-1 text-xs">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Ouvrir
+            </span>
+          </div>
+
+          <!-- Accent bar -->
+          <div class="card-accent-bar"></div>
+        </div>
+      `;
+    }
+
+    function openSite(e, url) {
+      if (e.target.closest('button')) return;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    // ── CATEGORY ─────────────────────────────────────────────
+    function setCategory(cat) {
+      activeCategory = cat;
+      render();
+    }
+
+    // ── MODAL ────────────────────────────────────────────────
+    function openAddModal() {
+      editingId = null;
+      document.getElementById('modalTitle').textContent = 'Ajouter un site';
+      document.getElementById('modalSubtitle').textContent = 'Remplissez les informations du site';
+      document.getElementById('submitBtnText').textContent = 'Ajouter le site';
+      document.getElementById('bookmarkForm').reset();
+      resetPreview();
+      updateCatSuggestions();
+      showModal();
+    }
+
+    function openEditModal(id) {
+      const b = bookmarks.find(x => x.id === id);
+      if (!b) return;
+      editingId = id;
+      document.getElementById('modalTitle').textContent = 'Modifier le site';
+      document.getElementById('modalSubtitle').textContent = b.name;
+      document.getElementById('submitBtnText').textContent = 'Enregistrer';
+      document.getElementById('nameInput').value = b.name || '';
+      document.getElementById('urlInput').value = b.url || '';
+      document.getElementById('descInput').value = b.description || '';
+      document.getElementById('categoryInput').value = b.category || '';
+      document.getElementById('iconInput').value = b.icon || '';
+      updatePreview(b.url, b.name, b.icon);
+      updateCatSuggestions();
+      showModal();
+    }
+
+    function showModal() {
+      isModalOpen = true;
+      const overlay = document.getElementById('modalOverlay');
+      const backdrop = document.getElementById('modalBackdrop');
+      const box = document.getElementById('modalBox');
+      overlay.style.pointerEvents = 'auto';
+      backdrop.style.pointerEvents = 'auto';
+      box.style.pointerEvents = 'auto';
+      overlay.classList.add('show');
+      box.classList.remove('modal-enter');
+      void box.offsetWidth; // reflow
+      box.classList.add('modal-enter');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => document.getElementById('nameInput').focus(), 350);
+    }
+
+    function closeModal() {
+      isModalOpen = false;
+      const overlay = document.getElementById('modalOverlay');
+      const backdrop = document.getElementById('modalBackdrop');
+      const box = document.getElementById('modalBox');
+      overlay.classList.remove('show');
+      setTimeout(() => {
+        overlay.style.pointerEvents = 'none';
+        backdrop.style.pointerEvents = 'none';
+        box.style.pointerEvents = 'none';
+        document.body.style.overflow = '';
+      }, 300);
+    }
+
+    function resetPreview() {
+      document.getElementById('previewIcon').innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a14.5 14.5 0 0 0 0 20"/>
+        </svg>`;
+      document.getElementById('previewName').textContent = 'Aperçu du site';
+      document.getElementById('previewDomain').textContent = 'Entrez une URL ci-dessous';
+    }
+
+    function updatePreview(url, name, icon) {
+      const favicon = getFaviconUrl(url, icon);
+      const domain = getDomain(url);
+      document.getElementById('previewName').textContent = name || domain || 'Aperçu du site';
+      document.getElementById('previewDomain').textContent = domain || 'Entrez une URL ci-dessous';
+      if (favicon) {
+        document.getElementById('previewIcon').innerHTML =
+          `<img src="${escAttr(favicon)}" class="w-full h-full object-contain p-0.5"
+             onerror="this.style.display='none'">`;
+      } else {
+        resetPreview();
+      }
+    }
+
+    function updateCatSuggestions() {
+      const cats = [...new Set(bookmarks.map(b => b.category).filter(Boolean))];
+      document.getElementById('categorySuggestions').innerHTML =
+        cats.map(c => `<option value="${escAttr(c)}">`).join('');
+    }
+
+    // ── SUBMIT ───────────────────────────────────────────────
+    function handleSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('nameInput').value.trim();
+      const url = ensureUrl(document.getElementById('urlInput').value);
+      const desc = document.getElementById('descInput').value.trim();
+      const category = document.getElementById('categoryInput').value.trim();
+      const icon = document.getElementById('iconInput').value.trim();
+
+      if (!name || !url) return;
+
+      if (editingId) {
+        const idx = bookmarks.findIndex(b => b.id === editingId);
+        if (idx !== -1) {
+          bookmarks[idx] = { ...bookmarks[idx], name, url, description: desc, category, icon };
+        }
+        save();
+        closeModal();
+        render();
+      } else {
+        const newB = { id: uid(), name, url, description: desc, category, icon, order: -1 };
+        bookmarks.unshift(newB);
+        bookmarks.forEach((b, i) => b.order = i);
+        save();
+        closeModal();
+        render();
+        // Extra bounce on new first card
+        requestAnimationFrame(() => {
+          const first = document.querySelector('#bookmarksGrid .bookmark-card');
+          if (first) {
+            first.classList.remove('card-stagger');
+            first.classList.add('card-enter');
+          }
+        });
+      }
+    }
+
+    // ── DELETE ───────────────────────────────────────────────
+    function openDeleteModal(id) {
+      deleteTargetId = id;
+      const b = bookmarks.find(x => x.id === id);
+      document.getElementById('deleteTargetName').textContent =
+        b ? `« ${b.name} » sera supprimé définitivement.` : 'Cette action est irréversible.';
+
+      isDeleteModalOpen = true;
+      const modal = document.getElementById('deleteModal');
+      const backdrop = document.getElementById('deleteBackdrop');
+      const box = document.getElementById('deleteBox');
+      modal.style.pointerEvents = 'auto';
+      backdrop.style.pointerEvents = 'auto';
+      box.style.pointerEvents = 'auto';
+      modal.classList.add('show');
+      box.classList.remove('modal-enter');
+      void box.offsetWidth;
+      box.classList.add('modal-enter');
+      document.body.style.overflow = 'hidden';
+
+      document.getElementById('confirmDeleteBtn').onclick = doDelete;
+    }
+
+    function closeDeleteModal() {
+      isDeleteModalOpen = false;
+      const modal = document.getElementById('deleteModal');
+      const backdrop = document.getElementById('deleteBackdrop');
+      const box = document.getElementById('deleteBox');
+      modal.classList.remove('show');
+      setTimeout(() => {
+        modal.style.pointerEvents = 'none';
+        backdrop.style.pointerEvents = 'none';
+        box.style.pointerEvents = 'none';
+        document.body.style.overflow = '';
+      }, 250);
+    }
+
+    function doDelete() {
+      if (!deleteTargetId) return;
+      const card = document.querySelector(`[data-id="${CSS.escape(deleteTargetId)}"]`);
+      if (card) {
+        card.classList.add('card-exit');
+        setTimeout(() => {
+          bookmarks = bookmarks.filter(b => b.id !== deleteTargetId);
+          save();
+          closeDeleteModal();
+          render();
+        }, 280);
+      } else {
+        bookmarks = bookmarks.filter(b => b.id !== deleteTargetId);
+        save();
+        closeDeleteModal();
+        render();
+      }
+      deleteTargetId = null;
+    }
+
+    // ── DRAG & DROP ──────────────────────────────────────────
+    function setupCardDrag(card) {
+      card.addEventListener('dragstart', e => {
+        dragSrcId = card.dataset.id;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragSrcId);
+        setTimeout(() => card.classList.add('is-dragging'), 0);
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('is-dragging');
+        document.querySelectorAll('.drag-target').forEach(el => el.classList.remove('drag-target'));
+      });
+      card.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (card.dataset.id !== dragSrcId) card.classList.add('drag-target');
+      });
+      card.addEventListener('dragleave', () => card.classList.remove('drag-target'));
+      card.addEventListener('drop', e => {
+        e.preventDefault();
+        card.classList.remove('drag-target');
+        const tgtId = card.dataset.id;
+        if (!dragSrcId || dragSrcId === tgtId) return;
+        const srcIdx = bookmarks.findIndex(b => b.id === dragSrcId);
+        const tgtIdx = bookmarks.findIndex(b => b.id === tgtId);
+        if (srcIdx === -1 || tgtIdx === -1) return;
+        const [moved] = bookmarks.splice(srcIdx, 1);
+        bookmarks.splice(tgtIdx, 0, moved);
+        bookmarks.forEach((b, i) => b.order = i);
+        save();
+        render();
+      });
+    }
+
+    // ── EVENT LISTENERS ──────────────────────────────────────
+    function setupEventListeners() {
+      // Search
+      document.getElementById('searchInput').addEventListener('input', e => {
+        searchQuery = e.target.value;
+        renderGrid();
+      });
+
+      // Modal preview on input
+      document.getElementById('urlInput').addEventListener('input', debounce(e => {
+        const url = ensureUrl(e.target.value);
+        const name = document.getElementById('nameInput').value.trim();
+        const icon = document.getElementById('iconInput').value.trim();
+        updatePreview(url, name, icon);
+      }, 400));
+
+      document.getElementById('nameInput').addEventListener('input', e => {
+        const url = ensureUrl(document.getElementById('urlInput').value);
+        const icon = document.getElementById('iconInput').value.trim();
+        if (url) updatePreview(url, e.target.value, icon);
+        else document.getElementById('previewName').textContent = e.target.value || 'Aperçu du site';
+      });
+
+      document.getElementById('iconInput').addEventListener('input', debounce(e => {
+        const url = ensureUrl(document.getElementById('urlInput').value);
+        const name = document.getElementById('nameInput').value.trim();
+        updatePreview(url, name, e.target.value);
+      }, 400));
+
+      // Close modal on backdrop click
+      document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+
+      // Keyboard
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+          if (isDeleteModalOpen) { closeDeleteModal(); return; }
+          if (isModalOpen) { closeModal(); return; }
+        }
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          scrollToSection('app');
+          setTimeout(() => document.getElementById('searchInput').focus(), 500);
+        }
+        if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+          e.preventDefault();
+          openAddModal();
+        }
+      });
+    }
+
+    function debounce(fn, ms) {
+      let t;
+      return function(...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), ms); };
+    }
+
+    // ── START ────────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>

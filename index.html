@@ -1,0 +1,211 @@
+<!-- index.html -->
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Mon Portail — Répertoire de liens</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Aller au contenu principal</a>
+
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">🔗</div>
+        <div>
+          <h1>Mon Portail</h1>
+          <p class="subtitle">Un répertoire personnel pour retrouver tous tes sites — ajout, modification, recherche, import/export.</p>
+        </div>
+      </div>
+
+      <div class="header-actions" aria-label="Actions globales">
+        <button id="themeToggleBtn" class="btn btn-ghost" type="button" aria-pressed="false" title="Basculer clair/sombre">
+          <span class="btn-icon" aria-hidden="true">🌓</span>
+          <span class="btn-text">Thème</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="container" role="main">
+    <section class="panel" aria-labelledby="actionsTitle">
+      <div class="panel-head">
+        <h2 id="actionsTitle">Actions</h2>
+        <p class="muted">Ajoute, exporte, importe ou réinitialise ton répertoire.</p>
+      </div>
+
+      <div class="actions-row" role="group" aria-label="Boutons d'actions">
+        <button id="addSiteBtn" class="btn btn-primary" type="button">
+          <span class="btn-icon" aria-hidden="true">＋</span>
+          Ajouter un site
+        </button>
+
+        <button id="exportBtn" class="btn btn-secondary" type="button">
+          <span class="btn-icon" aria-hidden="true">⤓</span>
+          Exporter JSON
+        </button>
+
+        <label class="btn btn-secondary file-btn" for="importInput">
+          <span class="btn-icon" aria-hidden="true">⤒</span>
+          Importer JSON
+        </label>
+        <input id="importInput" class="sr-only" type="file" accept="application/json" />
+
+        <button id="resetBtn" class="btn btn-danger" type="button">
+          <span class="btn-icon" aria-hidden="true">↺</span>
+          Réinitialiser
+        </button>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="filtersTitle">
+      <div class="panel-head">
+        <h2 id="filtersTitle">Recherche &amp; filtres</h2>
+        <p class="muted">Filtre par texte, catégorie et tri.</p>
+      </div>
+
+      <div class="filters-grid">
+        <div class="field">
+          <label for="searchInput">Rechercher</label>
+          <input
+            id="searchInput"
+            type="search"
+            inputmode="search"
+            placeholder="Nom, URL, description, tags…"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="field">
+          <label for="categoryFilter">Catégorie</label>
+          <select id="categoryFilter">
+            <option value="">Toutes les catégories</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="sortSelect">Trier</label>
+          <select id="sortSelect">
+            <option value="updatedAt_desc">Dernière modif (récent)</option>
+            <option value="updatedAt_asc">Dernière modif (ancien)</option>
+            <option value="createdAt_desc">Date d’ajout (récent)</option>
+            <option value="createdAt_asc">Date d’ajout (ancien)</option>
+            <option value="name_asc">Nom (A → Z)</option>
+            <option value="name_desc">Nom (Z → A)</option>
+            <option value="category_asc">Catégorie (A → Z)</option>
+            <option value="category_desc">Catégorie (Z → A)</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="results-bar" aria-live="polite">
+      <div>
+        <strong id="resultCount">0</strong> site(s)
+        <span id="activeFilters" class="muted"></span>
+      </div>
+    </section>
+
+    <section aria-labelledby="sitesTitle">
+      <h2 id="sitesTitle" class="sr-only">Liste des sites</h2>
+
+      <div id="emptyState" class="empty-state" hidden>
+        <div class="empty-emoji" aria-hidden="true">🗂️</div>
+        <h3>Aucun résultat</h3>
+        <p class="muted">Essaie de modifier ta recherche ou ajoute un nouveau site.</p>
+        <button id="emptyAddBtn" class="btn btn-primary" type="button">Ajouter un site</button>
+      </div>
+
+      <div id="cardsGrid" class="cards-grid" aria-label="Grille des sites"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="container footer-inner">
+      <p class="muted">Données stockées localement dans ton navigateur (localStorage). Aucun backend.</p>
+    </div>
+  </footer>
+
+  <!-- MODAL: Add/Edit -->
+  <div id="modalOverlay" class="modal-overlay" hidden></div>
+
+  <div
+    id="siteModal"
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
+    aria-describedby="modalDesc"
+    hidden
+  >
+    <div class="modal-header">
+      <h2 id="modalTitle">Ajouter un site</h2>
+      <button id="closeModalBtn" class="icon-btn" type="button" aria-label="Fermer la fenêtre">
+        ✕
+      </button>
+    </div>
+
+    <p id="modalDesc" class="muted">
+      Renseigne les champs obligatoires. L’URL doit commencer par http:// ou https://
+    </p>
+
+    <form id="siteForm" novalidate>
+      <input type="hidden" id="siteId" />
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="nameInput">Nom <span aria-hidden="true" class="req">*</span></label>
+          <input id="nameInput" name="name" type="text" required maxlength="80" autocomplete="off" />
+          <p class="hint" id="nameHint">Ex : Portail équipe, ACPR, Outil de scoring…</p>
+        </div>
+
+        <div class="field">
+          <label for="urlInput">URL <span aria-hidden="true" class="req">*</span></label>
+          <input
+            id="urlInput"
+            name="url"
+            type="url"
+            required
+            inputmode="url"
+            placeholder="https://exemple.com"
+            autocomplete="off"
+          />
+          <p class="hint" id="urlHint">Doit commencer par <code>http://</code> ou <code>https://</code>.</p>
+        </div>
+
+        <div class="field field-full">
+          <label for="descInput">Description</label>
+          <textarea id="descInput" name="description" rows="3" maxlength="220"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="categoryInput">Catégorie</label>
+          <input id="categoryInput" name="category" type="text" maxlength="40" autocomplete="off" />
+        </div>
+
+        <div class="field">
+          <label for="tagsInput">Tags</label>
+          <input id="tagsInput" name="tags" type="text" maxlength="120" placeholder="ex: lcb-ft, reporting, outils" />
+          <p class="hint">Sépare par des virgules.</p>
+        </div>
+      </div>
+
+      <div id="formError" class="form-error" role="alert" hidden></div>
+
+      <div class="modal-footer">
+        <button id="cancelBtn" class="btn btn-ghost" type="button">Annuler</button>
+        <button id="saveBtn" class="btn btn-primary" type="submit">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
